@@ -133,9 +133,8 @@ async def build_result(ms, type=0):
         )
 
 
-async def get_mc(
-    host: str, port: int, timeout: int = 5
-) -> List[Tuple[Optional[MineStat], Optional[ConnStatus]]]:
+async def get_mc(java, bedrock, timeout: int = 5
+                 ) -> List[Tuple[Optional[MineStat], Optional[ConnStatus]]]:
     """
     获取Java版和Bedrock版的MC服务器信息。
 
@@ -148,7 +147,7 @@ async def get_mc(
     - list: 包含Java版和Bedrock版服务器信息的列表，如果列表为空则返回None。
     """
     loop = asyncio.get_event_loop()
-    return [await loop.run_in_executor(None, get_java, host, port, timeout), await loop.run_in_executor(None, get_bedrock, host, port, timeout)]
+    return [await loop.run_in_executor(None, get_java, java[0], java[1], timeout), await loop.run_in_executor(None, get_bedrock, bedrock[0], bedrock[1], timeout)]
 
 
 async def get_message_list(ip: str, port: int, timeout: int = 5) -> List[Text]:
@@ -166,7 +165,7 @@ async def get_message_list(ip: str, port: int, timeout: int = 5) -> List[Text]:
     srv = await resolve_srv(ip, port)
     assert isinstance(srv[0], str)
     messages = []
-    ms = await get_mc(srv[0], int(srv[1]), timeout)
+    ms = await get_mc((srv[0], int(srv[1])), (ip, port), timeout)
     for i in ms:
         if i[0] is not None:
             messages.append(await build_result(i[0], message_type))
@@ -412,7 +411,7 @@ async def parse_motd2mark(json_data: Optional[str]) -> Optional[str]:
         i = 0
         while i < len(json_data):
             if json_data[i] == "§":
-                style_code = json_data[i : i + 2]
+                style_code = json_data[i: i + 2]
                 if style_code in standard_color_map:
                     result += standard_color_map[style_code]
                     i += 2
@@ -518,7 +517,8 @@ async def parse_motd2html(json_data: Optional[str]) -> Optional[str]:
         "§g": ('<span style="color:#DDD605;">', "</span>"),  # minecoin gold
         "§h": ('<span style="color:#E3D4D1;">', "</span>"),  # material quartz
         "§i": ('<span style="color:#CECACA;">', "</span>"),  # material iron
-        "§j": ('<span style="color:#443A3B;">', "</span>"),  # material netherite
+        # material netherite
+        "§j": ('<span style="color:#443A3B;">', "</span>"),
         "§l": ("<b style='color: {};'>", "</b>"),  # bold
         "§m": ("<s style='color: {};'>", "</s>"),  # strikethrough
         "§n": ("<u style='color: {};'>", "</u>"),  # underline
@@ -549,7 +549,8 @@ async def parse_motd2html(json_data: Optional[str]) -> Optional[str]:
                 if len(hex_color) == 3:
                     hex_color = "".join([c * 2 for c in hex_color])
                 color_code = hex_color.upper()
-                color_html_str = (f'<span style="color:#{color_code};">', "</span>")
+                color_html_str = (
+                    f'<span style="color:#{color_code};">', "</span>")
             else:
                 color_html_str = standard_color_map.get(color, ("", ""))
                 color_code = re.search(
@@ -591,7 +592,7 @@ async def parse_motd2html(json_data: Optional[str]) -> Optional[str]:
         styles = []
         while i < len(json_data):
             if json_data[i] == "§":
-                style_code = json_data[i : i + 2]
+                style_code = json_data[i: i + 2]
                 if style_code in standard_color_map:
                     open_tag, close_tag = standard_color_map[style_code]
 
@@ -607,7 +608,7 @@ async def parse_motd2html(json_data: Optional[str]) -> Optional[str]:
                     i += 2
                     continue
             # 处理换行符
-            if json_data[i : i + 2] == "\n":
+            if json_data[i: i + 2] == "\n":
                 result += "<br>"
                 i += 2
                 continue
@@ -636,7 +637,8 @@ class ColoredTextImage:
         self.text = text
         self.padding = padding
         self.background_color = background_color
-        self.font_path = os.path.join(os.path.dirname(__file__), "font", "Regular.ttf")
+        self.font_path = os.path.join(
+            os.path.dirname(__file__), "font", "Regular.ttf")
         self.bold_font_path = os.path.join(
             os.path.dirname(__file__), "font", "Bold.ttf"
         )
@@ -711,7 +713,8 @@ class ColoredTextImage:
         """
         text = self.text
         width, height = self._calculate_dimensions(text)
-        self.image = Image.new("RGB", (width, height), self.background_color)  # type: ignore
+        self.image = Image.new("RGB", (width, height),
+                               self.background_color)  # type: ignore
         self.draw = ImageDraw.Draw(self.image)
         await self._parse_style(text)
         return self
@@ -748,7 +751,7 @@ class ColoredTextImage:
                     end_tag = line.find("]", i)
                     if end_tag == -1:
                         break
-                    tag = line[i : end_tag + 1]
+                    tag = line[i: end_tag + 1]
                     if tag == "[#BOLD]":
                         styles["bold"] = True
                     elif tag == "[#ITALIC]":
@@ -766,7 +769,7 @@ class ColoredTextImage:
                             hex_color = "".join([c * 2 for c in hex_color])
                         try:
                             current_color = tuple(
-                                int(hex_color[j : j + 2], 16) for j in (0, 2, 4)
+                                int(hex_color[j: j + 2], 16) for j in (0, 2, 4)
                             )
                         except ValueError:
                             current_color = (0, 0, 0)
@@ -775,7 +778,8 @@ class ColoredTextImage:
 
                 char = line[i]
                 font_mod = get_font(styles["bold"], styles["italic"])
-                bbox = self.draw.textbbox((x_offset, y_offset), char, font=font_mod)
+                bbox = self.draw.textbbox(
+                    (x_offset, y_offset), char, font=font_mod)
                 width = bbox[2] - bbox[0]
 
                 self.draw.text(
@@ -793,7 +797,8 @@ class ColoredTextImage:
                 if styles["strikethrough"]:
                     strikethrough_y = y_offset + self.font_size / 2
                     self.draw.line(
-                        (x_offset, strikethrough_y, x_offset + width, strikethrough_y),
+                        (x_offset, strikethrough_y,
+                         x_offset + width, strikethrough_y),
                         fill=current_color,
                         width=1,
                     )

@@ -9,4 +9,4 @@ def readInfo(file: str) -> dict:
 message_type = Config.get_config("mc_check", "type", 0)
 lang = Config.get_config("mc_check", "LANGUAGE", "zh-cn")
 lang_data = readInfo("language.json")
-VERSION = "1.22"
+VERSION = "1.23"
