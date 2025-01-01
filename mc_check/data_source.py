@@ -996,6 +996,10 @@ class MineStat:
 
     # - a fixed prefix '§1'
     # - the protocol version
+    if payload_list[1]:
+      self.protocol_version = int(payload_list[1][1:])
+    else:
+      self.protocol_version = 0
     self.protocol_version = int(payload_list[1][1:])
     # - the server version
     self.version = payload_list[2]
