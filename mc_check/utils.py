@@ -66,9 +66,11 @@ async def build_result(ms, address, type=0):
             "gamemode": ms.gamemode,
             "motd": await parse_motd2html(ms.motd),
             "players": f"{ms.current_players}/{ms.max_players}",
-            "player_list": await parse_motd2html("§r, ".join(ms.player_list))
-            if ms.player_list
-            else None,
+            "player_list": (
+                await parse_motd2html("§r, ".join(ms.player_list))
+                if ms.player_list
+                else None
+            ),
             "lang": lang_data[lang],
             "VERSION": VERSION,
         }
@@ -141,9 +143,11 @@ async def get_mc(
             await asyncio.to_thread(get_java, ip, port, ip_type, refer, timeout)
         ]
 
-    return await asyncio.gather(
-        asyncio.to_thread(get_java, ip, port, ip_type, refer, timeout),
-        asyncio.to_thread(get_bedrock, ip, port, ip_type, refer, timeout),
+    return list(
+        await asyncio.gather(
+            asyncio.to_thread(get_java, ip, port, ip_type, refer, timeout),
+            asyncio.to_thread(get_bedrock, ip, port, ip_type, refer, timeout),
+        )
     )
 
 
@@ -308,16 +312,15 @@ async def is_domain(address: str) -> bool:
     返回:
     bool: 如果地址为域名则返回True，否则返回False。
     """
-    if address.lower() == "localhost":
-        return True
-    domain_pattern = re.compile(
-        r"^(?!-)(?:[A-Za-z0-9-]{1,63}\.)+(?:[A-Za-z]{2,})$|^(xn--[A-Za-z0-9-]{1,63})\.[A-Za-z]{2,}$"
-    )
     try:
         punycode_address = idna.encode(address).decode("utf-8")
-        return bool(domain_pattern.match(punycode_address))
     except idna.IDNAError:
         return False
+
+    domain_pattern = re.compile(
+        r"^(?!-)(?:[A-Za-z0-9-]{1,63}\.)+(?:[A-Za-z]{2,}|xn--[A-Za-z0-9-]{2,})$|^(localhost)$"
+    )
+    return bool(domain_pattern.match(punycode_address))
 
 
 async def is_ipv4(address: str) -> bool:
@@ -390,8 +393,13 @@ async def get_origin_address(
       - 第四个元素是解析地址的来源域名或IP
     """
     ip_type = await get_ip_type(domain)
+    try:
+        refer_domain = idna.encode(domain).decode("utf-8")
+    except idna.IDNAError:
+        refer_domain = domain
+
     if ip_type != "Domain":
-        return [(domain, ip_port, ip_type, domain)]
+        return [(domain, ip_port, ip_type, refer_domain)]
     data = []
 
     resolver = dns.asyncresolver.Resolver()
@@ -411,6 +419,10 @@ async def get_origin_address(
                 srv_address = str(rdata.target).rstrip(".")  # type: ignore
                 srv_port = rdata.port  # type: ignore
                 ip_type = await get_ip_type(srv_address)
+                try:
+                    srv_refer = idna.encode(srv_address).decode("utf-8")
+                except idna.IDNAError:
+                    srv_refer = srv_address
                 if ip_type == "Domain":
                     srv_address_ = await get_origin_address(
                         srv_address, srv_port, False
@@ -421,18 +433,12 @@ async def get_origin_address(
                         f"SRV-{srv_address_[0][2]}",
                         srv_address_[0][3],
                     )
-                    # data.extend(
-                    #     [
-                    #         (addr, port, f"SRV-{ip_type}", refer)
-                    #         for addr, port, ip_type, refer in srv_address_
-                    #     ]
-                    # )
                 else:
                     srv_data = (
                         srv_address,
                         srv_port,
                         f"SRV-{ip_type}",
-                        domain,
+                        srv_refer,
                     )
                 if not any(
                     entry[0] == srv_data[0]
@@ -452,7 +458,7 @@ async def get_origin_address(
         ):
             response = await resolver.resolve(domain, "AAAA")
             for rdata in response:
-                data.append((str(rdata.address), ip_port, "IPv6", domain))  # type: ignore
+                data.append((str(rdata.address), ip_port, "IPv6", refer_domain))  # type: ignore
                 break
 
     async def resolve_a():
@@ -464,7 +470,7 @@ async def get_origin_address(
         ):
             response = await resolver.resolve(domain, "A")
             for rdata in response:
-                data.append((str(rdata.address), ip_port, "IPv4", domain))  # type: ignore
+                data.append((str(rdata.address), ip_port, "IPv4", refer_domain))  # type: ignore
                 break
 
     if is_resolve_srv:
@@ -637,6 +643,7 @@ async def parse_motd2html(data: str | None) -> str | None:
         return await parse_text_motd(data)
 
     return await parse_json_motd(data)
+
 
 def is_qbot(session: Uninfo) -> bool:
     """判断bot是否为qq官bot
