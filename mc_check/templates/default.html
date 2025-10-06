@@ -1,56 +1,48 @@
 <!DOCTYPE html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="main.css" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Template</title>
+  </head>
 
-<head>
-   <meta charset="UTF-8">
-   <link rel="stylesheet" href="main.css">
-   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   <title>Template</title>
-</head>
-
-<body>
-   <div class="server-form">
-      <img class="favicon" src="{{ data['favicon'] }}" alt="Fail to show favicon.">
+  <body>
+    <div class="server-form">
+      <img
+        class="favicon"
+        src="{{ data['favicon'] }}"
+        alt="Fail to load the favicon."
+      />
       <div class="content">
-         <label>
-            {{ data["lang"]["version"]|safe }}{{ data["version"]|safe }}
-         </label>
-         <label>
-            {{ data["lang"]["motd"]|safe }}{{ data["motd"]|safe }}
-         </label>
-         <label>
-            {{ data["lang"]["slp_protocol"]|safe }}{{ data["slp_protocol"]|safe }}
-         </label>
-         {% if data["protocol_version"] is not none %}
-            <label>{{ data["lang"]["protocol_version"]|safe }}{{ data["protocol_version"]|safe }}</label>
-         {% endif %}
-         <label>
-            {{ data["lang"]["address"]|safe }}{{ data["address"]|safe }}
-         </label>
-         <label>
-            {{ data["lang"]["ip"]|safe }}{{ data["ip"]|safe }}
-         </label>
-         <label>
-            {{ data["lang"]["port"]|safe }}{{ data["port"]|safe }}
-         </label>
-         <label>
-            {{ data["lang"]["delay"]|safe }}{{ data["delay"]|safe}}
-         </label>
-        {% if 'BEDROCK' in data["slp_protocol"] %}
-            <label>{{ data["lang"]["gamemode"]|safe }}{{ data["gamemode"]|safe }}</label>
+        <label> {{ data["lang"]["version"] }}{{ data["version"] }} </label>
+        <label> {{ data["lang"]["motd"] }}{{ data["motd"]|safe }} </label>
+        <label>
+          {{ data["lang"]["slp_protocol"] }}{{ data["slp_protocol"] }}
+        </label>
+        {% if data["protocol_version"] is not none %}
+        <label>
+          {{ data["lang"]["protocol_version"] }}{{ data["protocol_version"]}}
+        </label>
         {% endif %}
-         <label>
-            {{ data["lang"]["players"]|safe }}{{ data["players"]|safe }}
-         </label>
-         {% if data["player_list"] is not none %}
-            <label>{{ data["lang"]["player_list"]|safe }}{{ data["player_list"]|safe }}</label>
-         {% endif %}
+        <label> {{ data["lang"]["address"] }}{{ data["address"] }} </label>
+        <label> {{ data["lang"]["ip"] }}{{ data["ip"] }} </label>
+        <label> {{ data["lang"]["port"] }}{{ data["port"] }} </label>
+        <label> {{ data["lang"]["delay"] }}{{ data["delay"]}} </label>
+        {% if 'BEDROCK' in data["slp_protocol"] %}
+        <label>{{ data["lang"]["gamemode"] }}{{ data["gamemode"] }}</label>
+        {% endif %}
+        <label> {{ data["lang"]["players"] }}{{ data["players"] }} </label>
+        {% if data["player_list"] is not none %}
+        <label>
+          {{ data["lang"]["player_list"] }}{{ data["player_list"] }}
+        </label>
+        {% endif %}
       </div>
       <div class="watermark">
-         zhenxun_plugin_mccheck v{{ data["VERSION"] }} by molanp.
+        zhenxun_plugin_mccheck v{{ data["VERSION"] }} by molanp.
       </div>
-   </div>
-</body>
-
+    </div>
+  </body>
 </html>

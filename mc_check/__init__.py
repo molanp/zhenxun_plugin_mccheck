@@ -1,7 +1,9 @@
+import itertools
+
 from arclet.alconna import Alconna, Args, CommandMeta
 from nonebot.plugin import PluginMetadata
-from nonebot_plugin_alconna import Arparma, Text, UniMessage, on_alconna
-from nonebot_plugin_uninfo import Session, UniSession
+from nonebot_plugin_alconna import Match, Text, UniMessage, on_alconna
+from nonebot_plugin_uninfo import Uninfo
 
 from zhenxun.configs.utils import PluginCdBlock, PluginExtraData, RegisterConfig
 
@@ -85,15 +87,15 @@ lang_list = on_alconna(
 
 
 @check.handle()
-async def _(p: Arparma, session: Session = UniSession()):
-    if not p.find("host"):
+async def _(host: Match[str], session: Uninfo):
+    if not host.available:
         await check.finish(Text(f"{lang_data[lang]['where_ip']}"), reply_to=True)
-    address, port = await parse_host(p.query("host"))
+    address, port = await parse_host(host.result)
 
     if not str(port).isdigit() or not (0 <= int(port) <= 65535):
         await check.finish(Text(f"{lang_data[lang]['where_port']}"), reply_to=True)
 
-    if await is_validity_address(address):
+    if is_validity_address(address):
         await get_info(address, port, session)
         return
 
@@ -103,27 +105,24 @@ async def get_info(ip, port, session):
 
     try:
         message_list = await get_message_list(ip, port, 3)
-        if any(isinstance(i, list) for i in message_list):
-            for sublist in message_list:
-                if is_qbot(session):
-                    for m in sublist:
-                        await check.send(UniMessage(m), reply_to=True)
-                else:
-                    await check.send(UniMessage(sublist), reply_to=True)
-        elif is_qbot(session):
+        if is_qbot(session):
             for m in message_list:
                 await check.send(UniMessage(m), reply_to=True)
         else:
+            message_list = list(itertools.chain.from_iterable(message_list))
             await check.send(UniMessage(message_list), reply_to=True)
     except BaseException as e:
-        await check.send(await handle_exception(e), reply_to=True)
+        await check.send(handle_exception(e), reply_to=True)
+
 
 @lang_change.handle()
 async def _(language: str):
     if language:
-        await lang_change.send(Text(await change_language_to(language)), reply_to=True)
+        await lang_change.send(Text(change_language_to(language)), reply_to=True)
     else:
         await lang_change.send(Text("Language?"), reply_to=True)
+
+
 @lang_now.handle()
 async def _():
     await lang_now.send(Text(f"Language: {lang}."), reply_to=True)

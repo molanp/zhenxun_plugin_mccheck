@@ -2,8 +2,6 @@
 # Copyright (C) 2016-2023 Lloyd Dilley, Felix Ern (MindSolve)
 # http://www.dilley.me/
 #
-# Secondary optimization and customization are carried out by @molanp.
-#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
@@ -17,6 +15,13 @@
 # You should have received a copy of the GNU General Public License along
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+# 本文件由 @molanp 进行优化与需求定制
+#
+# 由于 wiki.vg 站点已关闭，现在你可以在
+# https://minecraft.wiki/w/Minecraft_Wiki:Projects/wiki.vg_merge#Project_pages
+# 找到原始内容的副本
+
 import base64
 from enum import Enum
 import io
@@ -30,73 +35,71 @@ from time import perf_counter, time
 
 class ConnStatus(Enum):
     """
-    Contains possible connection states.
-
-    - `SUCCESS`: The specified SLP connection succeeded (Request & response parsing OK)
-    - `CONNFAIL`: The socket to the server could not be established. Server offline, wrong hostname or port?
-    - `TIMEOUT`: The connection timed out. (Server under too much load? Firewall rules OK?)
-    - `UNKNOWN`: The connection was established, but the server spoke an unknown/unsupported SLP protocol.
+    包含可能的连接状态
+    - `SUCCESS`：指定的 SLP 连接成功（请求和响应解析正常）
+    - `CONNFAIL`：无法建立到服务器的套接字连接。服务器离线、主机名或端口错误？
+    - `TIMEOUT`：连接超时。（服务器负载过高？防火墙规则是否正确？）
+    - `UNKNOWN`：连接已建立，但服务器使用了未知或不支持的 SLP 协议
     """
 
     def __str__(self) -> str:
         return str(self.name)
 
     SUCCESS = 0
-    """The specified SLP connection succeeded (Request & response parsing OK)"""
+    """指定的 SLP 连接成功（请求和响应解析正常）"""
 
     CONNFAIL = -1
-    """The socket to the server could not be established. (Server offline, wrong hostname or port?)"""
+    """无法建立与服务器的套接字连接。（服务器离线，主机名或端口错误？）"""
 
     TIMEOUT = -2
-    """The connection timed out. (Server under too much load? Firewall rules OK?)"""
+    """连接超时。（服务器负载过高？防火墙规则是否正确？）"""
 
     UNKNOWN = -3
-    """The connection was established, but the server spoke an unknown/unsupported SLP protocol."""
+    """连接已建立，但服务器使用了未知或不支持的 SLP 协议"""
 
 
 class SlpProtocols(Enum):
     """
-    Contains possible SLP (Server List Ping) protocols.
+    包含可能的 SLP（服务器列表 Ping）协议。
 
-    - `ALL`: Try all protocols.
+    - `ALL`：尝试所有协议。
 
-      Attempts to connect to a remote server using all available protocols until an acceptable response
-      is received or until failure.
+      尝试使用所有可用协议连接到远程服务器，直到收到可接受的响应或失败为止。
 
-    - `QUERY`: The Query / GameSpot4 / UT3 protocol for Mincraft Java servers.
-      Needs to be enabled on the Minecraft server.
-      Query is similar to SLP but additionally returns more technical related data.
+    - `QUERY`：用于 Minecraft Java 服务器的 Query / GameSpot4 / UT3 协议。
+      需要在 Minecraft 服务器上启用。
+      Query 类似于 SLP，但会返回更多技术相关的数据。
 
-      *Available since Minecraft 1.9*
+      *自 Minecraft 1.9 起可用*
 
-    - `BEDROCK_RAKNET`: The Minecraft Bedrock/Education edition protocol.
+    - `BEDROCK_RAKNET`：Minecraft 基岩版/教育版协议。
 
-      *Available for all Minecraft Bedrock versions, not compatible with Java edition.*
+      *适用于所有 Minecraft 基岩版版本，与 Java 版不兼容。*
 
-    - `JSON`: The newest and currently supported SLP protocol.
+    - `JSON`：最新且当前支持的 SLP 协议。
 
-      Uses (wrapped) JSON as payload. Complex query, see `json_query()` for the protocol implementation.
+      使用（包装的）JSON 作为负载。复杂查询，详见 `json_query()` 的协议实现。
 
-      *Available since Minecraft 1.7*
-    - `EXTENDED_LEGACY`: The previous SLP protocol
+      *自 Minecraft 1.7 起可用*
+    - `EXTENDED_LEGACY`：上一代 SLP 协议
 
-      Used by Minecraft 1.6, it is still supported by all newer server versions.
-      Complex query needed, see implementation `extended_legacy_query()` for full protocol details.
+      Minecraft 1.6 使用，所有新版本服务器仍兼容。
+      需要复杂查询，详见 `extended_legacy_query()` 的完整协议细节。
 
-      *Available since Minecraft 1.6*
-    - `LEGACY`: The legacy SLP protocol.
+      *自 Minecraft 1.6 起可用*
+    - `LEGACY`：传统 SLP 协议。
 
-      Used by Minecraft 1.4 and 1.5, it is the first protocol to contain the server version number.
-      Very simple protocol call (2 byte), simple response decoding.
-      See `legacy_query()` for full implementation and protocol details.
+      Minecraft 1.4 和 1.5 使用，是第一个包含服务器版本号的协议。
+      非常简单的协议调用（2 字节），简单的响应解码。
+      详见 `legacy_query()` 的完整实现和协议细节。
 
-      *Available since Minecraft 1.4*
-    - `BETA`: The first SLP protocol.
+      *自 Minecraft 1.4 起可用*
+    - `BETA`：第一个 SLP 协议。
 
-      Used by Minecraft Beta 1.8 till Release 1.3, it is the first SLP protocol.
-      It contains very few details, no server version info, only MOTD, max- and online player counts.
+      Minecraft Beta 1.8 到 Release 1.3 使用，是最早的 SLP 协议。
+      包含的信息很少，没有服务器版本，仅有 MOTD、最大和在线玩家数。
 
-      *Available since Minecraft Beta 1.8*
+      *自 Minecraft Beta 1.8 起可用*
     """
 
     def __str__(self) -> str:
@@ -104,77 +107,80 @@ class SlpProtocols(Enum):
 
     ALL = 5
     """
-  Attempt to use all protocols.
-  """
+    尝试所有协议。
+
+    尝试使用所有可用协议连接到远程服务器，直到收到可接受的响应或失败为止。
+    """
 
     QUERY = 6
     """
-  The Query / GameSpot4 / UT3 protocol for Mincraft Java servers.
-  Needs to be enabled on the Minecraft server.
+    用于 Minecraft Java 服务器的 Query / GameSpot4 / UT3 协议。
+    需要在 Minecraft 服务器上启用。
 
-  Query is similar to SLP but additionally returns more technical related data.
+    Query 类似于 SLP，但会返回更多技术相关的数据。
 
-  *Available since Minecraft 1.9*
-  """
+    *自 Minecraft 1.9 起可用*
+    """
 
     BEDROCK_RAKNET = 4
     """
-  The Bedrock SLP-equivalent using the RakNet `Unconnected Ping` packet.
+    Minecraft 基岩版/教育版协议。
 
-  Currently experimental.
-  """
+    目前为实验性支持。
+    """
 
     JSON = 3
     """
-  The newest and currently supported SLP protocol.
+    最新且当前支持的 SLP 协议。
 
-  Uses (wrapped) JSON as payload. Complex query, see `json_query()` for the protocol implementation.
+    使用（包装的）JSON 作为负载。复杂查询，详见 `json_query()` 的协议实现。
 
-  *Available since Minecraft 1.7*
-  """
+    *自 Minecraft 1.7 起可用*
+    """
 
     EXTENDED_LEGACY = 2
-    """The previous SLP protocol
+    """
+    上一代 SLP 协议
 
-  Used by Minecraft 1.6, it is still supported by all newer server versions.
-  Complex query needed, see implementation `extended_legacy_query()` for full protocol details.
+    Minecraft 1.6 使用，所有新版本服务器仍兼容。
+    需要复杂查询，详见 `extended_legacy_query()` 的完整协议细节。
 
-  *Available since Minecraft 1.6*
-  """
+    *自 Minecraft 1.6 起可用*
+    """
 
     LEGACY = 1
     """
-  The legacy SLP protocol.
+    传统 SLP 协议。
 
-  Used by Minecraft 1.4 and 1.5, it is the first protocol to contain the server version number.
-  Very simple protocol call (2 byte), simple response decoding.
-  See `legacy_query()` for full implementation and protocol details.
+    Minecraft 1.4 和 1.5 使用，是第一个包含服务器版本号的协议。
+    非常简单的协议调用（2 字节），简单的响应解码。
+    详见 `legacy_query()` 的完整实现和协议细节。
 
-  *Available since Minecraft 1.4*
-  """
+    *自 Minecraft 1.4 起可用*
+    """
 
     BETA = 0
     """
-  The first SLP protocol.
+    第一个 SLP 协议。
 
-  Used by Minecraft Beta 1.8 till Release 1.3, it is the first SLP protocol.
-  It contains very few details, no server version info, only MOTD, max- and online player counts.
+    Minecraft Beta 1.8 到 Release 1.3 使用，是最早的 SLP 协议。
+    包含的信息很少，没有服务器版本，仅有 MOTD、最大和在线玩家数。
 
-  *Available since Minecraft Beta 1.8*
-  """
+    *自 Minecraft Beta 1.8 起可用*
+    """
 
 
 class MineStat:
-    VERSION = "2.6.3"
-    """The MineStat version"""
+    VERSION = "2.6.4@molanp"
+    """MineStat 版本"""
     DEFAULT_TCP_PORT = 25565
-    """default TCP port for SLP queries"""
+    """SLP 查询的默认 TCP 端口"""
     DEFAULT_BEDROCK_PORT_V4 = 19132
-    """default UDP port for Bedrock/MCPE IPv4 servers"""
+    """Bedrock/MCPE IPv4 服务器的默认 UDP 端口"""
     DEFAULT_BEDROCK_PORT_V6 = 19133
-    """default UDP port for Bedrock/MCPE IPv6 servers"""
+    """Bedrock/MCPE IPv6 服务器的默认 UDP 端口"""
     DEFAULT_TIMEOUT = 5
-    """default TCP timeout in seconds"""
+    """默认 TCP 超时时间（秒）"""
 
     def __init__(
         self,
@@ -186,27 +192,25 @@ class MineStat:
         use_ipv6: bool = False,
     ) -> None:
         """
-        minestat - The Minecraft status checker. Supports Minecraft Java edition and Bedrock/Education/PE servers.
+        Minecraft 状态检查器,支持 Minecraft Java 版和基岩版/Education/PE 服务器
 
-        :param address: Hostname or IP address of the Minecraft server.
-        :param port: Optional port of the Minecraft server. Defaults to auto detection (25565 for Java Edition, 19132 for Bedrock/MCPE).
-        :param timeout: Optional timeout in seconds for each connection attempt. Defaults to 5 seconds.
-        :param query_protocol: Optional protocol to use. See minestat.SlpProtocols for available choices. Defaults to auto detection.
-        :param refer: The source of IP in the send packet Default use address.
-        :param use_ipv6: Optional, whether to use ip_v6 for DNS resolution. Defaults to False.
+        :param address: Minecraft 服务器的 IP 地址。
+        :param port: Minecraft 服务器的端口。默认为自动检测
+        :param timeout: 每次连接尝试的超时时间。默认为 5 秒。
+        :param query_protocol: 使用的协议。详见 minestat.SlpProtocols。默认为ALL
+        :param refer: 发送数据包时使用的 IP 来源。默认使用 address。
+        :param use_ipv6: 是否使用 IPv6 进行套接字连接。默认为 False。
         """
 
-        """Whether to use ip_v6 for DNS resolution"""
-        self.use_ipv6: bool | None = use_ipv6
+        self.refer: str
+        """已发送数据包中 IP 的来源"""
 
-        """The source of the IP in the sent packet"""
-        if refer is None:
-            self.refer = address
-        else:
-            self.refer = refer
+        self.use_ipv6: bool = use_ipv6
+        """是否使用 IPv6 进行套接字连接"""
 
+        self.refer = address if refer is None else refer
         self.address: str = address
-        """hostname or IP address of the Minecraft server"""
+        """Minecraft 服务器的 IP 地址"""
 
         autoport: bool = False
         if not port:
@@ -220,53 +224,53 @@ class MineStat:
                 port = self.DEFAULT_TCP_PORT
 
         self.port: int = port
-        """port number the Minecraft server accepts connections on"""
+        """Minecraft 服务器接受连接的端口号"""
         self.online: bool = False
-        """online or offline?"""
+        """在线或离线"""
         self.version: str | None = None
-        """server version"""
+        """服务器版本号"""
         self.plugins: list[str] | None = None
-        """list of plugins returned by the Query protcol, may be empty"""
+        """由 Query 协议返回的插件列表，可能为空"""
         self.motd: str | None = None
-        """message of the day, unchanged server response (including formatting codes/JSON)"""
+        """当天消息，服务器响应保持不变（包括格式代码/JSON）"""
         self.stripped_motd: str | None = None
-        """message of the day, stripped of all formatting ("human-readable")"""
+        """每日消息，已去除所有格式（人类可读）"""
         self.current_players: int | None = None
-        """current number of players online"""
+        """当前在线玩家人数"""
         self.max_players: int | None = None
-        """maximum player capacity"""
+        """最大玩家容量"""
         self.player_list: list[str] | None = None
-        """list of online players, may be empty even if "current_players" is over 0"""
+        """在线玩家列表，即使`current_players`大于0，也可能为空"""
         self.map: str | None = None
-        """the name of the map the server is running on, only supported by the Query protocol"""
+        """服务器运行的地图名称，仅由 Query 和 Bedrock 协议支持"""
         self.latency: int | None = None
-        """ping time to server in milliseconds"""
+        """到服务器的延迟时间（毫秒）"""
         self.timeout: int = timeout
-        """socket timeout"""
+        """套接字超时"""
         self.slp_protocol: SlpProtocols | None = None
-        """Server List Ping protocol"""
+        """服务器列表 ping 协议"""
         self.protocol_version: int | None = None
-        """Server protocol version"""
+        """服务器协议版本"""
         self.favicon_b64: str | None = None
-        """base64-encoded favicon possibly contained in JSON 1.7 responses"""
+        """可能包含在 JSON 1.7 响应中的 base64 编码图标"""
         self.favicon: str | None = None
-        """decoded favicon data"""
+        """解码后的网站图标数据"""
         self.gamemode: str | None = None
-        """Bedrock specific: The current game mode (Creative/Survival/Adventure)"""
-        self.srv_record: bool | None = None
-        """wether the server has a SRV record"""
+        """基岩版特有：当前游戏模式（Creative/Survival/Adventure)）"""
         self.connection_status: ConnStatus | None = None
-        """Status of connection ("SUCCESS", "CONNFAIL", "TIMEOUT", or "UNKNOWN")"""
+        """连接状态 ("SUCCESS", "CONNFAIL", "TIMEOUT", 或 "UNKNOWN")"""
+        self.edition: str | None = None
+        """基岩版特有：服务器类型（MCPE/MCEE）"""
 
-        # Future improvement: IPv4/IPv6, multiple addresses
-        # If a host has multiple IP addresses or a IPv4 and a IPv6 address,
-        # socket.connect choses the first IPv4 address returned by DNS.
-        # If a mc server is not available over IPv4, this failes as "offline".
-        # Or in some environments, the DNS returns the external and the internal
-        # address, but from an internal client, only the internal address is reachable
-        # See https://docs.python.org/3/library/socket.html#socket.getaddrinfo
+        # 未来改进：IPv4/IPv6，多地址
+        # 如果主机有多个IP地址或同时拥有IPv4和IPv6地址，
+        # socket.connect 会选择DNS返回的第一个IPv4地址。
+        # 如果Minecraft服务器通过IPv4不可用，则会失败并显示“离线”。
+        # 或者在某些环境中，DNS返回外部地址和内部地址，
+        # 但从内部客户端只能访问内部地址。
+        # 详见 https://docs.python.org/3/library/socket.html#socket.getaddrinfo
 
-        # If the user wants a specific protocol, use only that.
+        # 如果用户希望使用特定协议，仅使用该协议。
         result = ConnStatus.UNKNOWN
         if query_protocol is not SlpProtocols.ALL:
             if query_protocol is SlpProtocols.BETA:
@@ -285,11 +289,10 @@ class MineStat:
 
             return
 
-        # Note: The order for Java edition here is unfortunately important.
-        # Some older versions of MC don't accept packets for a few seconds
-        # after receiving a not understood packet.
-        # An example is MC 1.4: Nothing works directly after a json request.
-        # A legacy query alone works fine.
+        # 注意：此处 Java 版本的顺序不幸地非常重要。
+        # 某些较老的 MC 版本在接收到无法识别的数据包后的几秒钟内不接受新的数据包。
+        # 例如 MC 1.4：在发送 JSON 请求后，任何操作都不能立即生效。
+        # 单独的传统查询则可以正常工作。
 
         # Minecraft Bedrock/Pocket/Education Edition (MCPE/MCEE)
         if autoport and not self.port:
@@ -327,10 +330,10 @@ class MineStat:
     @staticmethod
     def motd_strip_formatting(raw_motd: str | dict) -> str:
         """
-        Function for stripping all formatting codes from a motd. Supports Json Chat components (as dict) and
-        the legacy formatting codes.
+        用于去除 MOTD 中所有格式代码的函数。
+        支持 JSON 聊天组件（以字典形式）以及旧版格式代码
 
-        :param raw_motd: The raw MOTD, either as a string or dict (from "json.loads()")
+        :param raw_motd: 原始 MOTD，可以是字符串或字典
         """
         stripped_motd = ""
 
@@ -348,13 +351,13 @@ class MineStat:
 
     def bedrock_raknet_query(self) -> ConnStatus:
         """
-        Method for querying a Bedrock server (Minecraft PE, Windows 10 or Education Edition).
-        The protocol is based on the RakNet protocol.
+        用于查询基岩版服务器（Minecraft PE、Windows 10 或教育版）的方法。
+        该协议基于 RakNet 协议。
 
-        See https://wiki.vg/Raknet_Protocol#Unconnected_Ping
+        详见 https://wiki.vg/Raknet_Protocol#Unconnected_Ping
 
-        Note: This method currently works as if the connection is handled via TCP (as if no packet loss might occur).
-        Packet loss handling should be implemented (resending).
+        注意：此方法目前的实现假设连接通过 TCP 处理（即假定不会发生数据包丢失）。
+        应实现数据包丢失处理（如重发机制）。
         """
 
         RAKNET_MAGIC = bytearray(
@@ -404,8 +407,8 @@ class MineStat:
         # 16 byte - magic
         # short - Server ID string length
         # string - Server ID string
+        start_time = perf_counter()  # 记录发送时间
         try:
-            start_time = perf_counter()  # 记录发送时间
             sock.connect((self.address, self.port))
             sock.send(req_data)
 
@@ -475,43 +478,29 @@ class MineStat:
 
         self.current_players = int(payload["current_players"])
         self.max_players = int(payload["max_players"])
-        try:
-            self.version = (
-                payload["version"]
-                + " "
-                + payload["motd_2"]
-                + " ("
-                + payload["edition"]
-                + ")"
-            )
-        except (
-            KeyError
-        ):  # older Bedrock server versions do not respond with the secondary MotD.
-            self.version = payload["version"] + " (" + payload["edition"] + ")"
-
+        self.version = payload["version"]
         self.motd = payload["motd_1"]
+        # 旧版 Bedrock 服务器不会用第二条服务器信息（MotD）进行响应。
+        self.map = payload.get("motd_2")
+        self.edition = payload["edition"]
         self.stripped_motd = self.motd_strip_formatting(self.motd)
 
-        try:
-            self.gamemode = payload["gamemode"]
-        except (
-            KeyError
-        ):  # older Bedrock server versions do not respond with the game mode.
-            self.gamemode = None
+        # 旧版 Bedrock 服务器不会返回游戏模式。
+        self.gamemode = payload.get("gamemode")
 
         return ConnStatus.SUCCESS
 
     def fullstat_query(self) -> ConnStatus:
         """
-        Method for querying a Minecraft Java server using the fullstat Query / GameSpot4 / UT3 protocol.
-        Needs to be enabled on the Minecraft server using:
+        用于通过 fullstat Query / GameSpot4 / UT3 协议
+        查询 Minecraft Java 版服务器的方法
+        需要在 Minecraft 服务器上启用此功能，
+        方法是在服务器的 "server.properties" 文件中添加以下配置:
 
-        "enable-query=true"
+        `enable-query=true`
 
-        in the servers "server.properties" file.
-
-        This method ONLY supports full stat querys.
-        Documentation for this protocol: https://wiki.vg/Query
+        该方法仅支持完整的状态查询。
+        协议文档详见：https://wiki.vg/Query
         """
         # protocol:
         #   send handshake request
@@ -521,7 +510,7 @@ class MineStat:
 
         # Create UDP socket and set timeout
         if self.use_ipv6:
-            sock = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+            sock = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
         else:
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.settimeout(self.timeout)
@@ -596,11 +585,11 @@ class MineStat:
 
     def __parse_query_payload(self, raw_res) -> ConnStatus:
         """
-        Helper method for parsing the reponse from a query request.
+        用于解析 Query 请求响应的辅助方法。
 
-        See https://wiki.vg/Query for details.
+        详见 https://wiki.vg/Query 获取详细信息。
 
-        This implementation does not parse every value returned by the query protocol.
+        此实现并未解析 Query 协议返回的所有值。
         """
         try:
             self.__extracted_from___parse_query_payload_11(raw_res)
