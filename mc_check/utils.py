@@ -422,8 +422,7 @@ async def get_origin_address(
                     )
                 if not any(
                     entry[0] == srv_data[0]
-                    and entry[1] == srv_data[1]
-                    and entry[2].replace("SRV-", "") == srv_data[2].replace("SRV-", "")
+                    and (entry[1] == srv_data[1] or srv_data[1] == 25565)
                     for entry in data
                 ):
                     data.append(srv_data)
