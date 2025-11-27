@@ -8,6 +8,7 @@ from typing import Literal
 
 import dns.asyncresolver
 import dns.exception
+import dns.name
 import dns.resolver
 import idna
 from nonebot import require
@@ -290,22 +291,23 @@ def is_validity_address(address: str) -> bool:
 
 def is_domain(address: str) -> bool:
     """
-    判断给定的地址是否为域名。
+    判断给定的地址是否为合法域名。
 
-    :params address: 需要验证的地址。
-
-    :returns: 如果地址为域名则返回True，否则返回False。
+    :param str address: 待验证的域名字符串。
+    :returns: 如果合法返回 True，否则返回 False。
+    :rtype: bool
     """
     try:
-        punycode_address = idna.encode(address).decode("utf-8")
-    except idna.IDNAError:
+        # 尝试构造 DNS Name 对象
+        name = dns.name.from_text(address)
+
+        # 检查总长度是否符合 RFC (<= 253)
+        if len(name.to_unicode()) > 253:
+            return False
+
+        return all(len(label) <= 63 for label in name.labels)
+    except Exception:
         return False
-
-    domain_pattern = re.compile(
-        r"^(?!-)(?:[A-Za-z0-9-]{1,63}\.)+(?:[A-Za-z]{2,}|xn--[A-Za-z0-9-]{2,})$|^(localhost)$"
-    )
-    return bool(domain_pattern.match(punycode_address))
-
 
 def is_ipv4(address: str) -> bool:
     """
