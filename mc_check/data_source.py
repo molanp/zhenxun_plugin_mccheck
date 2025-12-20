@@ -423,10 +423,10 @@ class MineStat:
                 return ConnStatus.UNKNOWN
 
             # Receive (& ignore) response timestamp
-            response_timestamp = struct.unpack("<q", response_stream.read(8))
+            response_timestamp = struct.unpack("<q", response_stream.read(8))  # noqa: F841
 
             # Server GUID
-            response_server_guid = struct.unpack("<q", response_stream.read(8))
+            response_server_guid = struct.unpack("<q", response_stream.read(8))  # noqa: F841
 
             # Magic
             response_magic = response_stream.read(16)
@@ -434,7 +434,7 @@ class MineStat:
                 return ConnStatus.UNKNOWN
 
             # Server ID string length
-            response_id_string_length = struct.unpack(">h", response_stream.read(2))
+            response_id_string_length = struct.unpack(">h", response_stream.read(2))  # noqa: F841
 
             # Receive server ID string
             response_id_string = response_stream.read().decode("utf8")
