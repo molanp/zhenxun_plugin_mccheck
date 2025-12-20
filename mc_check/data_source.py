@@ -481,6 +481,7 @@ class MineStat:
         self.version = payload["version"]
         self.motd = payload["motd_1"]
         # 旧版 Bedrock 服务器不会用第二条服务器信息（MotD）进行响应。
+        # 一般情况下，服务器第二条消息会返回当前的地图名称（Geyser除外）
         self.map = payload.get("motd_2")
         self.edition = payload["edition"]
         self.stripped_motd = self.motd_strip_formatting(self.motd)
