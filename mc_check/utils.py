@@ -4,6 +4,7 @@ import json
 import os
 import re
 import traceback
+from typing import Any
 from urllib.parse import urlparse
 
 from mcstatus import BedrockServer, JavaServer
@@ -216,7 +217,7 @@ def is_qbot(session: Uninfo) -> bool:
     return session.scope == SupportScope.qq_api
 
 
-def parse_motd2html(data: str) -> str:
+def parse_motd2html(data: str | dict) -> str:
     """
     解析MOTD数据并转换为带有自定义颜色的HTML字符串。
 
@@ -504,7 +505,8 @@ def parse_motd2html(data: str) -> str:
         return result.replace("\n", "<br/>")
 
     try:
-        data = json.loads(data)
+        if not isinstance(data, dict):
+            data = json.loads(data)
     except json.JSONDecodeError:
         return parse_text_motd(data)
 
