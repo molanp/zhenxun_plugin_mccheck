@@ -1,4 +1,3 @@
 dnspython
-pillow
-ujson
+mcstatus
 nonebot-plugin-htmlrender

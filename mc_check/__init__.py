@@ -1,8 +1,15 @@
 import itertools
 
-from arclet.alconna import Alconna, Args, CommandMeta
 from nonebot.plugin import PluginMetadata
-from nonebot_plugin_alconna import Match, Text, UniMessage, on_alconna
+from nonebot_plugin_alconna import (
+    Alconna,
+    Args,
+    CommandMeta,
+    Match,
+    Text,
+    UniMessage,
+    on_alconna,
+)
 from nonebot_plugin_uninfo import Uninfo
 
 from zhenxun.configs.utils import PluginCdBlock, PluginExtraData, RegisterConfig
@@ -13,8 +20,7 @@ from .utils import (
     get_message_list,
     handle_exception,
     is_qbot,
-    is_validity_address,
-    parse_host,
+    valid_urlparse,
 )
 
 __plugin_meta__ = PluginMetadata(
@@ -90,21 +96,15 @@ lang_list = on_alconna(
 async def _(host: Match[str], session: Uninfo):
     if not host.available:
         await check.finish(Text(f"{lang_data[lang]['where_ip']}"), reply_to=True)
-    address, port = await parse_host(host.result)
-
-    if not str(port).isdigit() or not (0 <= int(port) <= 65535):
-        await check.finish(Text(f"{lang_data[lang]['where_port']}"), reply_to=True)
-
-    if is_validity_address(address):
-        await get_info(address, port, session)
-        return
-
-
-async def get_info(ip, port, session):
-    global ms
-
     try:
-        message_list = await get_message_list(ip, port, 3)
+        address, port = valid_urlparse(host.result)
+    except ValueError:
+        await check.finish(Text(f"{lang_data[lang]['where_ip']}"), reply_to=True)
+
+    if port and not (0 < port <= 65535):
+        await check.finish(Text(f"{lang_data[lang]['where_port']}"), reply_to=True)
+    try:
+        message_list = await get_message_list(address, port)
         if is_qbot(session):
             for m in message_list:
                 await check.send(UniMessage(m), reply_to=True)

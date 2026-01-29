@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -15,26 +15,22 @@
         src="{{ data['favicon'] }}"
         alt="Fail to load the favicon."
       />
+      <span class="server-type"> {{ data["type"] }} </span>
       <div class="content">
         <label> {{ data["lang"]["version"] }}{{ data["version"] }} </label>
         <label> {{ data["lang"]["motd"] }}{{ data["motd"]|safe }} </label>
-        <label>
-          {{ data["lang"]["slp_protocol"] }}{{ data["slp_protocol"] }}
-        </label>
-        {% if data["protocol_version"] is not none %}
+        {% if data["protocol_version"] is not none%}
         <label>
           {{ data["lang"]["protocol_version"] }}{{ data["protocol_version"]}}
         </label>
         {% endif %}
         <label> {{ data["lang"]["address"] }}{{ data["address"] }} </label>
-        <label> {{ data["lang"]["ip"] }}{{ data["ip"] }} </label>
-        <label> {{ data["lang"]["port"] }}{{ data["port"] }} </label>
         <label> {{ data["lang"]["delay"] }}{{ data["delay"]}} </label>
-        {% if 'BEDROCK' in data["slp_protocol"] %}
-        <label>{{ data["lang"]["gamemode"] }}{{ data["gamemode"] }}</label>
+        {% if data["lang"]["gamemode"] %}
+        <label> {{ data["lang"]["gamemode"] }}{{ data["gamemode"] }} </label>
         {% endif %}
         <label> {{ data["lang"]["players"] }}{{ data["players"] }} </label>
-        {% if data["player_list"] is not none %}
+        {% if data["player_list"] %}
         <label>
           {{ data["lang"]["player_list"] }}{{ data["player_list"] }}
         </label>
@@ -44,5 +40,129 @@
         zhenxun_plugin_mccheck v{{ data["VERSION"] }} by molanp.
       </div>
     </div>
+    <script>
+      var obfuscators = {};
+
+      function obfuscate(elem) {
+        // 获取元素的HTML内容
+        var originalHTML = elem.innerHTML;
+
+        // 查找reset标签的位置
+        var resetStartIndex = originalHTML.indexOf("<reset");
+        if (resetStartIndex !== -1) {
+          // 找到reset标签的结束位置
+          var resetEndIndex = -1;
+
+          // 检查是否是自闭合标签 <reset/>
+          var selfClosingCheck = originalHTML.indexOf("/>", resetStartIndex);
+          var closingTagCheck = originalHTML.indexOf(
+            "</reset>",
+            resetStartIndex,
+          );
+
+          if (
+            selfClosingCheck !== -1 &&
+            (closingTagCheck === -1 || selfClosingCheck < closingTagCheck)
+          ) {
+            // 自闭合标签
+            resetEndIndex = originalHTML.indexOf("/>", resetStartIndex) + 2;
+          } else if (closingTagCheck !== -1) {
+            // 有结束标签
+            resetEndIndex =
+              originalHTML.indexOf("</reset>", resetStartIndex) + 9; // +9 for '</reset>'
+          }
+
+          if (resetEndIndex !== -1) {
+            // 分离要混淆的部分和不混淆的部分
+            var beforeReset = originalHTML.substring(0, resetStartIndex);
+            var resetAndAfter = originalHTML.substring(resetStartIndex);
+
+            // 为混淆部分创建一个状态数组，记录每个位置的当前字符
+            var obfuscationState = [];
+            for (var j = 0; j < beforeReset.length; j++) {
+              obfuscationState.push(
+                String.fromCharCode(
+                  Math.floor(Math.random() * (95 - 64 + 1)) + 64,
+                ),
+              );
+            }
+
+            // 设置初始混淆状态
+            elem.innerHTML = obfuscationState.join("") + resetAndAfter;
+
+            // 为混淆部分设置定时器
+            var elementKey = elem;
+            obfuscators[elementKey] = obfuscators[elementKey] || [];
+
+            var i = 0;
+            var strLen = beforeReset.length;
+
+            if (strLen > 0) {
+              obfuscators[elementKey].push(
+                window.setInterval(function () {
+                  if (i >= strLen) i = 0;
+
+                  // 随机更改一个位置的字符
+                  obfuscationState[i] = String.fromCharCode(
+                    Math.floor(Math.random() * (95 - 64 + 1)) + 64,
+                  );
+
+                  // 重新构建HTML
+                  elem.innerHTML = obfuscationState.join("") + resetAndAfter;
+                  i++;
+                }, 5),
+              );
+            }
+          }
+        } else {
+          // 没有reset标签，混淆全部内容
+          var fullText = elem.innerHTML;
+
+          // 为整个文本创建一个状态数组
+          var obfuscationState = [];
+          for (var j = 0; j < fullText.length; j++) {
+            obfuscationState.push(
+              String.fromCharCode(
+                Math.floor(Math.random() * (95 - 64 + 1)) + 64,
+              ),
+            );
+          }
+
+          // 设置初始混淆状态
+          elem.innerHTML = obfuscationState.join("");
+
+          var elementKey = elem;
+          obfuscators[elementKey] = obfuscators[elementKey] || [];
+
+          var i = 0;
+          var strLen = fullText.length;
+
+          if (strLen > 0) {
+            obfuscators[elementKey].push(
+              window.setInterval(function () {
+                if (i >= strLen) i = 0;
+
+                // 随机更改一个位置的字符
+                obfuscationState[i] = String.fromCharCode(
+                  Math.floor(Math.random() * (95 - 64 + 1)) + 64,
+                );
+
+                // 重新设置HTML
+                elem.innerHTML = obfuscationState.join("");
+                i++;
+              }, 5),
+            );
+          }
+        }
+      }
+
+      // 处理页面上的obfuscated类元素
+      document.addEventListener("DOMContentLoaded", function () {
+        var obfuscatedElements = document.querySelectorAll(".obfuscated");
+        obfuscatedElements.forEach(function (element) {
+          obfuscate(element);
+        });
+      });
+    </script>
   </body>
 </html>
