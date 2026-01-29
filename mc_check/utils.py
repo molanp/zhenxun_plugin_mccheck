@@ -4,6 +4,7 @@ import json
 import os
 import re
 import traceback
+from typing import Any
 from urllib.parse import urlparse
 
 from mcstatus import BedrockServer, JavaServer
@@ -71,7 +72,7 @@ async def build_result(
             "address": address,
             "delay": f"{delay}ms",
             "gamemode": gamemode,
-            "motd": parse_motd2html(json.dumps(ms.motd.raw)),
+            "motd": parse_motd2html(ms.motd.raw), # pyright: ignore[reportArgumentType]
             "players": players,
             "player_list": parse_motd2html("§r, ".join(players_list))
             if players_list
@@ -424,7 +425,7 @@ def parse_motd2html(data: str) -> str:
                     open_tag, close_tag = standard_color_map[style_code]
 
                     # 如果是重置，则清空样式栈
-                    if open_tag == "</b></i></u></s>":
+                    if open_tag == "</b></i></u></s><reset/>":
                         # 清空样式栈并关闭所有打开的样式
                         for tag in styles:
                             result += tag
