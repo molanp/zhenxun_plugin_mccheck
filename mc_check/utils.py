@@ -4,7 +4,6 @@ import json
 import os
 import re
 import traceback
-from typing import Any
 from urllib.parse import urlparse
 
 from mcstatus import BedrockServer, JavaServer
