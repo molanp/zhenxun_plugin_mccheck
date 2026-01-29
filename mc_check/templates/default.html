@@ -19,14 +19,10 @@
       <div class="content">
         <label> {{ data["lang"]["version"] }}{{ data["version"] }} </label>
         <label> {{ data["lang"]["motd"] }}{{ data["motd"]|safe }} </label>
-        {% if data["protocol_version"] is not none%}
-        <label>
-          {{ data["lang"]["protocol_version"] }}{{ data["protocol_version"]}}
-        </label>
-        {% endif %}
+        <label> {{ data["lang"]["protocol_version"] }}{{ data["protocol_version"]}} </label>
         <label> {{ data["lang"]["address"] }}{{ data["address"] }} </label>
         <label> {{ data["lang"]["delay"] }}{{ data["delay"]}} </label>
-        {% if data["lang"]["gamemode"] %}
+        {% if data["gamemode"] %}
         <label> {{ data["lang"]["gamemode"] }}{{ data["gamemode"] }} </label>
         {% endif %}
         <label> {{ data["lang"]["players"] }}{{ data["players"] }} </label>

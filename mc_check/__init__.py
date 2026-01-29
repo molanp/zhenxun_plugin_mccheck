@@ -1,6 +1,9 @@
 import itertools
 
 from nonebot.plugin import PluginMetadata
+from nonebot import require
+require("nonebot_plugin_alconna")
+require("nonebot_plugin_uninfo")
 from nonebot_plugin_alconna import (
     Alconna,
     Args,
