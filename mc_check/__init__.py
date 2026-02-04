@@ -12,6 +12,7 @@ from nonebot_plugin_alconna import (
     Text,
     UniMessage,
     on_alconna,
+    SupportScope
 )
 from nonebot_plugin_uninfo import Uninfo
 
@@ -22,7 +23,6 @@ from .utils import (
     change_language_to,
     get_message_list,
     handle_exception,
-    is_qbot,
     valid_urlparse,
 )
 
@@ -108,7 +108,7 @@ async def _(host: Match[str], session: Uninfo):
         await check.finish(Text(f"{lang_data[lang]['where_port']}"), reply_to=True)
     try:
         message_list = await get_message_list(address, port)
-        if is_qbot(session):
+        if session.scope == SupportScope.qq_api:
             for m in message_list:
                 await check.send(UniMessage(m), reply_to=True)
         else:

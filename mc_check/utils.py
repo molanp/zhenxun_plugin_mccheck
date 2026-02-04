@@ -13,14 +13,13 @@ from mcstatus.responses import (
     JavaStatusResponse,
 )
 from nonebot import require
-from nonebot_plugin_uninfo import Uninfo
 
 from zhenxun.services.log import logger
 
 from .configs import VERSION, lang, lang_data, message_type
 
 require("nonebot_plugin_alconna")
-from nonebot_plugin_alconna import Image, SupportScope, Text
+from nonebot_plugin_alconna import Image, Text
 
 
 def handle_exception(e):
@@ -148,7 +147,7 @@ async def get_java(host: str, port: int | None) -> JavaStatusResponse | None:
     """
     address = f"{host}:{port}" if port else host
     try:
-        return await (await JavaServer.async_lookup(address)).async_status()
+        return await (await JavaServer.async_lookup(address)).async_status(version=760)
     except Exception:
         return None
 
@@ -203,18 +202,6 @@ def valid_urlparse(address: str) -> tuple[str, int | None]:
         raise ValueError(f"Invalid address '{address}', can't parse.")
 
     return tmp.hostname, tmp.port
-
-
-def is_qbot(session: Uninfo) -> bool:
-    """判断bot是否为qq官bot
-
-    参数:
-        session: Uninfo
-
-    返回:
-        bool: 是否为官bot
-    """
-    return session.scope == SupportScope.qq_api
 
 
 def parse_motd2html(data: str | dict) -> str:
