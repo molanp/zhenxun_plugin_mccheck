@@ -1,10 +1,20 @@
 @font-face {
-  src: url(Minecraft_AE.ttf);
-  font-family: "Minecraft_AE";
+  src: url(Mojangles.ttf);
+  font-family: "Mojangles";
+  unicode-range: U+0021-007E, U+00A0-FFFF;
+}
+
+@font-face {
+  src: url(unifont-17.0.04.otf);
+  font-family: "unifont-17.0.04";
+  size-adjust: 80%;
+  ascent-override: 90%;
+  descent-override: 10%;
 }
 
 * {
-  font-family: "Minecraft_AE";
+  font-family: "Mojangles", "unifont-17.0.04", monospace;
+  font-size: 20px;
 }
 
 body {
@@ -22,7 +32,7 @@ body {
 
 .content label {
   display: block;
-  margin-bottom: 10px;
+  margin-bottom: 5px;
 }
 
 ::-webkit-scrollbar {
@@ -58,11 +68,10 @@ body {
 .watermark {
   position: absolute;
   font-weight: bold;
-  font-size: 1px;
+  font-size: 8px;
   bottom: 0.5px;
   right: 0;
   color: #888888;
-  font-size: 8px;
   opacity: 0.1;
   z-index: 1000;
   pointer-events: none;
