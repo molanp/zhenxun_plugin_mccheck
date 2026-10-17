@@ -59,14 +59,14 @@ mcheck [2001:db8:85a3::8a2e:370:7334]  <- IPv6 server address
 | Configuration Item | Required | Default Value |                                         Description                                          |
 | :----------------: | :------: | :-----------: | :------------------------------------------------------------------------------------------: |
 |     `language`     |  False   |    `zh-cn`    | Languages used by the plugin to render images<br>Available languages: [`zh-cn`,`zh-tw`,`en`] |
-|       `type`       |  False   |      `0`      |              The type of message the plugin sends (`0` for HTML, `1` for text)               |
+|       `type`       |  False   |      `0`      |         The type of message the plugin sends (`0` for a Pillow image, `1` for text)          |
 
 ## 🎲 Comparison of message types
 
-| Type | Special Styles | Favicon | Colored underline/strikethrough | Full Unicode font support |
-| :--: | :------------: | :-----: | :-----------------------------: | :-----------------------: |
-| Text |       ❌       |   ⭕    |               ❌                |            ⭕             |
-| HTML |       ⭕       |   ⭕    |               ⭕                |            ⭕             |
+|  Type  | Special Styles | Favicon | Colored underline/strikethrough | Full Unicode font support |
+| :----: | :------------: | :-----: | :-----------------------------: | :-----------------------: |
+|  Text  |       ❌       |   ⭕    |               ❌                |            ⭕             |
+| Pillow |       ⭕       |   ⭕    |               ⭕                |            ⭕             |
 
 # [Download](https://github.com/molanp/zhenxun_plugin_mccheck/releases)
 

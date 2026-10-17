@@ -1,4 +1,4 @@
-﻿# Minecraft CSS Framework
+# Minecraft CSS Framework
 
 - Welcome to the package!
 
