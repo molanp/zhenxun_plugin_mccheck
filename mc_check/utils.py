@@ -1,8 +1,10 @@
 import asyncio
 import base64
+import time
 import traceback
 from urllib.parse import urlparse
 
+import httpx
 from mcstatus import BedrockServer, JavaServer
 from mcstatus.responses import (
     BedrockStatusResponse,
@@ -126,6 +128,49 @@ async def get_bedrock(host: str, port: int | None) -> BedrockStatusResponse | No
         return None
 
 
+NETHERNET_GAMEMODES = {0: "Survival", 1: "Creative", 2: "Adventure", 6: "Spectator"}
+
+
+async def get_nethernet(host: str, port: int | None) -> BedrockStatusResponse | None:
+    """
+    查询使用 NetherNet 传输的基岩版服务器（1.26.51 起默认，1.26.60 起唯一支持）。
+
+    这类服务器不回 RakNet ping，状态改由 TCP 端口上的 HTTP 接口 /v1/join 返回。
+
+    :params host: 服务器的主机名。
+    :params port: 服务器的端口号。
+
+    :returns: BedrockStatusResponse实例，如果服务器不在线返回None。
+    """
+    url_host = f"[{host}]" if ":" in host else host
+    url = f"http://{url_host}:{port or 19132}/v1/join"
+    try:
+        # 直连查询，避免系统代理影响结果和延迟
+        async with httpx.AsyncClient(timeout=3, trust_env=False) as client:
+            start = time.perf_counter()
+            resp = await client.get(url)
+            latency = (time.perf_counter() - start) * 1000
+        resp.raise_for_status()
+        info = resp.json()
+        # 按 RakNet pong 的字段顺序组装，复用 mcstatus 的解析
+        return BedrockStatusResponse.build(
+            [
+                "MCPE",
+                str(info["name"]),
+                int(info["protocol"]),
+                str(info["version"]),
+                int(info["players"]),
+                int(info["maxPlayers"]),
+                "",
+                str(info.get("level") or ""),
+                NETHERNET_GAMEMODES.get(info.get("gameType")),
+            ],
+            latency,
+        )
+    except Exception:
+        return None
+
+
 async def get_java(host: str, port: int | None) -> JavaStatusResponse | None:
     """
     通过指定的主机名、端口和超时时间获取Minecraft Java版服务器状态。
@@ -148,6 +193,7 @@ async def get_mc(
 ) -> tuple[JavaStatusResponse | None, BedrockStatusResponse | None]:
     """
     获取Java版和Bedrock版的MC服务器信息。
+    基岩版优先用 RakNet ping，查不到时用 NetherNet 的结果。
 
     :params ip: 服务器的IP地址。
     :params port: 服务器的端口。
@@ -155,10 +201,12 @@ async def get_mc(
     返回:
     - 包含Java版和Bedrock版服务器信息的列表。
     """
-    return await asyncio.gather(
+    java, bedrock, nethernet = await asyncio.gather(
         asyncio.create_task(get_java(ip, port)),
         asyncio.create_task(get_bedrock(ip, port)),
+        asyncio.create_task(get_nethernet(ip, port)),
     )
+    return java, bedrock or nethernet
 
 
 async def get_message_list(ip: str, port: int | None) -> list[list[Text | Image]]:

@@ -15,6 +15,7 @@ English|[简体中文](README.md)
 - [x] Support for double queries to interconnected servers
 - [x] Multilingual
 - [x] SRV support
+- [x] Bedrock NetherNet servers (1.26.51 and later)
 
 ## 📑 Future functions
 

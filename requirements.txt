@@ -1,3 +1,4 @@
 dnspython
+httpx
 mcstatus
 Pillow>=9.0
